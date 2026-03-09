@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["stockpulse*"]
+
+[project]
+name = "stockpulse"
+version = "0.1.0"
+description = "Indian Equity Technical Screener & Analytics Platform"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # Web framework
+    "flask>=3.1",
+    "gunicorn>=23.0",
+
+    # Database
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "alembic>=1.14",
+
+    # Task queue
+    "celery[redis]>=5.4",
+    "redis>=5.0",
+
+    # Auth
+    "flask-login>=0.6",
+    "bcrypt>=4.2",
+
+    # Data sources
+    "yfinance>=0.2",
+
+    # API schemas
+    "pydantic>=2.10",
+
+    # Utilities
+    "python-dotenv>=1.0",
+    "httpx>=0.28",
+    "pandas>=2.2",
+    "numpy>=2.0",
+    "openpyxl>=3.1",
+
+    # Logging
+    "structlog>=24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+]
