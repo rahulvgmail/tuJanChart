@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Screener Builder - StockPulse{% endblock %}
+
+{% block content %}
+<h1>Screener Builder</h1>
+
+<div x-data="screenerBuilder()">
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <section>
+            <h3>Conditions</h3>
+            <template x-for="(cond, idx) in conditions" :key="idx">
+                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <select x-model="cond.field">
+                        <option value="">-- field --</option>
+                        {% for f in fields %}
+                        <option value="{{ f }}">{{ f }}</option>
+                        {% endfor %}
+                        <option value="color">color</option>
+                    </select>
+                    <select x-model="cond.operator">
+                        <option value="">-- op --</option>
+                        <option value="is_true">is_true</option>
+                        <option value="is_false">is_false</option>
+                        <option value="eq">eq</option>
+                        <option value="neq">neq</option>
+                        <option value="gt">gt</option>
+                        <option value="gte">gte</option>
+                        <option value="lt">lt</option>
+                        <option value="lte">lte</option>
+                        <option value="in">in</option>
+                        <option value="gt_field">gt_field</option>
+                        <option value="lt_field">lt_field</option>
+                        <option value="gte_field">gte_field</option>
+                    </select>
+                    <input type="text" x-model="cond.value" placeholder="value"
+                           x-show="!['is_true', 'is_false'].includes(cond.operator)">
+                    <button class="outline secondary" @click="removeCondition(idx)" style="padding: 0.5rem;">X</button>
+                </div>
+            </template>
+            <button class="outline" @click="addCondition()">+ Add Condition</button>
+            <br><br>
+            <button @click="preview()">Preview Results</button>
+        </section>
+
+        <section>
+            <h3>Save Screener</h3>
+            <label for="scr-name">Name</label>
+            <input type="text" id="scr-name" x-model="name">
+            <label for="scr-desc">Description</label>
+            <input type="text" id="scr-desc" x-model="description">
+            <label for="scr-cat">Category</label>
+            <input type="text" id="scr-cat" x-model="category" value="custom">
+            <button @click="save()">Save Screener</button>
+        </section>
+    </div>
+
+    <hr>
+    <h3>Preview (<span x-text="previewCount">0</span> results)</h3>
+    <div id="preview-results" x-html="previewHtml"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function screenerBuilder() {
+    return {
+        conditions: [{ field: '', operator: '', value: '' }],
+        name: '',
+        description: '',
+        category: 'custom',
+        previewHtml: '',
+        previewCount: 0,
+        addCondition() { this.conditions.push({ field: '', operator: '', value: '' }); },
+        removeCondition(idx) { this.conditions.splice(idx, 1); },
+        parseConditions() {
+            return this.conditions
+                .filter(c => c.field && c.operator)
+                .map(c => {
+                    let val = c.value;
+                    if (['is_true', 'is_false'].includes(c.operator)) val = null;
+                    else if (!isNaN(val) && val !== '') val = parseFloat(val);
+                    return { field: c.field, operator: c.operator, value: val };
+                });
+        },
+        async preview() {
+            const resp = await fetch('{{ url_for("dashboard.screener_builder") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'preview', conditions: this.parseConditions() }),
+            });
+            this.previewHtml = await resp.text();
+            const rows = (this.previewHtml.match(/<tr>/g) || []).length - 1;
+            this.previewCount = Math.max(0, rows);
+        },
+        async save() {
+            if (!this.name) { alert('Name is required'); return; }
+            const resp = await fetch('{{ url_for("dashboard.screener_builder") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'save',
+                    name: this.name,
+                    description: this.description,
+                    category: this.category,
+                    conditions: this.parseConditions(),
+                }),
+            });
+            const data = await resp.json();
+            if (data.id) { window.location.href = '/screeners/' + data.id; }
+            else { alert(data.error || 'Failed to save'); }
+        },
+    };
+}
+</script>
+{% endblock %}

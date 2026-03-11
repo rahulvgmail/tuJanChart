@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}{{ stock.company_name }} - StockPulse{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>{{ stock.company_name }}</h1>
+        <p>{{ stock.nse_symbol or stock.symbol }} | {{ stock.sector or 'N/A' }} | {{ stock.industry or 'N/A' }}</p>
+    </div>
+    <div>
+        <form method="post" action="{{ url_for('dashboard.toggle_watchlist', stock_id=stock.id) }}" style="display:inline">
+            <button type="submit" class="{{ 'secondary' if in_watchlist else 'outline' }}" style="padding: 0.5rem 1rem;">
+                {{ 'Remove from Watchlist' if in_watchlist else 'Add to Watchlist' }}
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if color %}
+<p>Color: <mark>{{ color }}</mark></p>
+{% endif %}
+
+{% if indicator %}
+<div class="grid">
+    <article>
+        <header>Price</header>
+        <h2>{{ '%.2f'|format(indicator.current_price) if indicator.current_price else 'N/A' }}</h2>
+        {% if indicator.pct_change %}
+        <p style="color: {{ 'green' if indicator.pct_change > 0 else 'red' }}">
+            {{ '%+.2f'|format(indicator.pct_change) }}%
+        </p>
+        {% endif %}
+    </article>
+    <article>
+        <header>52W High</header>
+        <p>{{ '%.2f'|format(indicator.high_52w) if indicator.high_52w else 'N/A' }}</p>
+        {% if indicator.is_52w_closing_high %}<small>New 52W Closing High</small>{% endif %}
+    </article>
+    <article>
+        <header>Volume</header>
+        <p>{{ '{:,.0f}'.format(indicator.today_volume) if indicator.today_volume else 'N/A' }}</p>
+        {% if indicator.is_volume_breakout %}<small>Volume Breakout</small>{% endif %}
+    </article>
+</div>
+
+<h3>Moving Averages</h3>
+<table>
+    <thead>
+        <tr><th>Period</th><th>DMA</th><th>Touch</th><th>Signal</th><th>WMA</th><th>Touch</th><th>Signal</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>10</td>
+            <td>{{ '%.2f'|format(indicator.dma_10) if indicator.dma_10 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.dma_10_touch else '-' }}</td>
+            <td>{{ indicator.dma_10_signal or '-' }}</td>
+            <td>{{ '%.2f'|format(indicator.wma_10) if indicator.wma_10 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.wma_10_touch else '-' }}</td>
+            <td>{{ indicator.wma_10_signal or '-' }}</td>
+        </tr>
+        <tr>
+            <td>20</td>
+            <td>{{ '%.2f'|format(indicator.dma_20) if indicator.dma_20 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.dma_20_touch else '-' }}</td>
+            <td>{{ indicator.dma_20_signal or '-' }}</td>
+            <td>{{ '%.2f'|format(indicator.wma_20) if indicator.wma_20 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.wma_20_touch else '-' }}</td>
+            <td>{{ indicator.wma_20_signal or '-' }}</td>
+        </tr>
+        <tr>
+            <td>50</td>
+            <td>{{ '%.2f'|format(indicator.dma_50) if indicator.dma_50 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.dma_50_touch else '-' }}</td>
+            <td>{{ indicator.dma_50_signal or '-' }}</td>
+            <td>-</td><td>-</td><td>-</td>
+        </tr>
+        <tr>
+            <td>100</td>
+            <td>{{ '%.2f'|format(indicator.dma_100) if indicator.dma_100 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.dma_100_touch else '-' }}</td>
+            <td>{{ indicator.dma_100_signal or '-' }}</td>
+            <td>-</td><td>-</td><td>-</td>
+        </tr>
+        <tr>
+            <td>200</td>
+            <td>{{ '%.2f'|format(indicator.dma_200) if indicator.dma_200 else '-' }}</td>
+            <td>{{ 'Yes' if indicator.dma_200_touch else '-' }}</td>
+            <td>{{ indicator.dma_200_signal or '-' }}</td>
+            <td>-</td><td>-</td><td>-</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="grid">
+    <article>
+        <header>Gap</header>
+        <p>{{ '%.2f'|format(indicator.gap_pct) if indicator.gap_pct else '-' }}%</p>
+        {% if indicator.is_gap_up %}<small>Gap Up</small>{% endif %}
+        {% if indicator.is_gap_down %}<small>Gap Down</small>{% endif %}
+    </article>
+    <article>
+        <header>90D Range</header>
+        <p>High: {{ '%.2f'|format(indicator.high_90d) if indicator.high_90d else '-' }}</p>
+        <p>Low: {{ '%.2f'|format(indicator.low_90d) if indicator.low_90d else '-' }}</p>
+    </article>
+    <article>
+        <header>Result Date</header>
+        {% if indicator.days_to_result is not none %}
+        <p>{{ indicator.days_to_result }} days</p>
+        {% else %}
+        <p>-</p>
+        {% endif %}
+    </article>
+</div>
+{% else %}
+<p>No indicator data available.</p>
+{% endif %}
+
+<hr>
+
+<div class="grid" style="grid-template-columns: 1fr 1fr;">
+    <section>
+        <h3>Set Color</h3>
+        <form method="post" action="{{ url_for('dashboard.set_color', symbol=stock.nse_symbol or stock.symbol) }}">
+            <div class="grid" style="grid-template-columns: 1fr auto;">
+                <select name="color">
+                    {% for c in ['Green', 'Yellow', 'Red', 'White', 'Blue'] %}
+                    <option value="{{ c }}" {{ 'selected' if color == c else '' }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Set</button>
+            </div>
+        </form>
+    </section>
+
+    <section>
+        <h3>Add Note</h3>
+        <form method="post" action="{{ url_for('dashboard.add_note', symbol=stock.nse_symbol or stock.symbol) }}">
+            <textarea name="content" rows="2" required placeholder="Add a note..."></textarea>
+            <button type="submit">Add Note</button>
+        </form>
+    </section>
+</div>
+
+{% if notes %}
+<h3>Notes</h3>
+{% for n in notes %}
+<article>
+    <header>
+        <small>{{ n.author_type }} | {{ n.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+    </header>
+    <p>{{ n.content }}</p>
+</article>
+{% endfor %}
+{% endif %}
+
+{% if events %}
+<h3>Recent Events</h3>
+<table>
+    <thead><tr><th>Time</th><th>Type</th><th>Details</th></tr></thead>
+    <tbody>
+        {% for e in events %}
+        <tr>
+            <td>{{ e.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ e.event_type }}</td>
+            <td>
+                {% if e.payload %}
+                {% for k, v in e.payload.items() %}
+                <small>{{ k }}: {{ v }}</small>{% if not loop.last %}, {% endif %}
+                {% endfor %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% if memberships %}
+<h3>Screener Memberships</h3>
+<table>
+    <thead><tr><th>Screener</th><th>Entered</th></tr></thead>
+    <tbody>
+        {% for hist, screener in memberships %}
+        <tr>
+            <td><a href="{{ url_for('dashboard.screener_results', screener_id=screener.id) }}">{{ screener.name }}</a></td>
+            <td>{{ hist.date.isoformat() }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

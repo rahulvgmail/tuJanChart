@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Admin - StockPulse{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<section>
+    <h2>Users</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.email }}</td>
+                <td>{{ user.name or '-' }}</td>
+                <td>{{ user.role }}</td>
+                <td>{{ 'Active' if user.is_active else 'Inactive' }}</td>
+                <td>{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') if user.last_login_at else 'Never' }}</td>
+                <td>
+                    {% if user.id != current_user.id %}
+                    <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" style="display:inline">
+                        <button type="submit" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                            {{ 'Deactivate' if user.is_active else 'Activate' }}
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <details>
+        <summary>Invite New User</summary>
+        <form method="post" action="{{ url_for('admin.invite_user') }}">
+            <div class="grid">
+                <div>
+                    <label for="invite-email">Email</label>
+                    <input type="email" id="invite-email" name="email" required>
+                </div>
+                <div>
+                    <label for="invite-name">Name</label>
+                    <input type="text" id="invite-name" name="name">
+                </div>
+                <div>
+                    <label for="invite-role">Role</label>
+                    <select id="invite-role" name="role">
+                        <option value="member">Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit">Create User</button>
+        </form>
+    </details>
+</section>
+
+<hr>
+
+<section>
+    <h2>API Keys</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Label</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Used</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for key in api_keys %}
+            <tr>
+                <td>{{ key.user.email }}</td>
+                <td>{{ key.label or '-' }}</td>
+                <td>{{ 'Active' if key.is_active else 'Revoked' }}</td>
+                <td>{{ key.created_at.strftime('%Y-%m-%d') }}</td>
+                <td>{{ key.last_used_at.strftime('%Y-%m-%d %H:%M') if key.last_used_at else 'Never' }}</td>
+                <td>
+                    {% if key.is_active %}
+                    <form method="post" action="{{ url_for('admin.revoke_api_key', key_id=key.id) }}" style="display:inline">
+                        <button type="submit" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Revoke</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <details>
+        <summary>Create API Key</summary>
+        <form method="post" action="{{ url_for('admin.create_api_key') }}">
+            <div class="grid">
+                <div>
+                    <label for="key-user">User</label>
+                    <select id="key-user" name="user_id" required>
+                        {% for user in users %}
+                        {% if user.is_active %}
+                        <option value="{{ user.id }}">{{ user.email }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="key-label">Label</label>
+                    <input type="text" id="key-label" name="label" placeholder="e.g. DSPy app">
+                </div>
+            </div>
+            <button type="submit">Create Key</button>
+        </form>
+    </details>
+</section>
+{% endblock %}

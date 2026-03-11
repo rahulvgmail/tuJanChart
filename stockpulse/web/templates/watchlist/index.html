@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Watchlist - StockPulse{% endblock %}
+
+{% block content %}
+<h1>My Watchlist</h1>
+
+{% if items %}
+<table>
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Symbol</th>
+            <th>Price</th>
+            <th>% Chg</th>
+            <th>52W High</th>
+            <th>Volume</th>
+            <th>Added</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        {% set w = item.Watchlist %}
+        {% set stock = item.Stock %}
+        {% set ind = indicators.get(stock.id) %}
+        <tr>
+            <td><a href="{{ url_for('dashboard.stock_detail', symbol=stock.nse_symbol or stock.symbol) }}">{{ stock.company_name }}</a></td>
+            <td>{{ stock.nse_symbol or stock.symbol }}</td>
+            <td>{{ '%.2f'|format(ind.current_price) if ind and ind.current_price else '-' }}</td>
+            <td style="color: {{ 'green' if ind and ind.pct_change and ind.pct_change > 0 else 'red' if ind and ind.pct_change and ind.pct_change < 0 else 'inherit' }}">
+                {{ '%.2f'|format(ind.pct_change) if ind and ind.pct_change else '-' }}%
+            </td>
+            <td>{{ '%.2f'|format(ind.high_52w) if ind and ind.high_52w else '-' }}</td>
+            <td>{{ '{:,.0f}'.format(ind.today_volume) if ind and ind.today_volume else '-' }}</td>
+            <td>{{ w.added_at.strftime('%Y-%m-%d') }}</td>
+            <td>
+                <form method="post" action="{{ url_for('dashboard.toggle_watchlist', stock_id=stock.id) }}" style="display:inline">
+                    <button type="submit" class="outline secondary" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Your watchlist is empty. Add stocks from the stock detail page.</p>
+{% endif %}
+{% endblock %}

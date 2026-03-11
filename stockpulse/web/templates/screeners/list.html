@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Screeners - StockPulse{% endblock %}
+
+{% block content %}
+<div class="grid" style="grid-template-columns: 250px 1fr;">
+    <aside>
+        <h2>Screeners</h2>
+        <nav>
+            {% for category, screeners in categories.items() %}
+            <details open>
+                <summary><strong>{{ category }}</strong> ({{ screeners|length }})</summary>
+                <ul>
+                    {% for s in screeners %}
+                    <li><a href="{{ url_for('dashboard.screener_results', screener_id=s.id) }}">{{ s.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endfor %}
+        </nav>
+        <hr>
+        <a href="{{ url_for('dashboard.screener_builder') }}" role="button" class="outline">Build Custom Screener</a>
+    </aside>
+
+    <section>
+        <h2>Select a screener from the sidebar</h2>
+        <p>Choose a screener to view matching stocks. You can also build a custom screener.</p>
+    </section>
+</div>
+{% endblock %}

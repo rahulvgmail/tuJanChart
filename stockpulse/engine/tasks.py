@@ -61,6 +61,10 @@ def recompute_universe(self, as_of_str: str | None = None):
             elapsed,
         )
 
+        # Chain: trigger event detection and webhook dispatch
+        from stockpulse.webhooks.tasks import process_events
+        process_events.delay(as_of.isoformat())
+
         return {
             "status": "ok",
             "date": as_of.isoformat(),

@@ -20,4 +20,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "ingestion.pull_corporate_actions",
         "schedule": crontab(hour=18, minute=0, day_of_week="1-5"),
     },
+    # Retry failed webhook deliveries: every 5 minutes on weekdays
+    "webhook-retries": {
+        "task": "webhooks.retry_deliveries",
+        "schedule": crontab(minute="*/5", day_of_week="1-5"),
+    },
 }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}StockPulse{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        nav { padding: 0.5rem 1rem; }
+        .flash-messages { margin: 1rem 0; }
+        .flash { padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 0.5rem; }
+        .flash-error { background: #fee; border-left: 4px solid #c00; }
+        .flash-success { background: #efe; border-left: 4px solid #0a0; }
+        .flash-info { background: #eef; border-left: 4px solid #00c; }
+        main { padding: 1rem; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><strong>StockPulse</strong></li>
+        </ul>
+        <ul>
+            {% if current_user.is_authenticated %}
+            <li><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
+            <li><a href="{{ url_for('dashboard.screener_list') }}">Screeners</a></li>
+            <li><a href="{{ url_for('dashboard.watchlist') }}">Watchlist</a></li>
+            {% if current_user.is_admin %}
+            <li><a href="{{ url_for('admin.dashboard') }}">Admin</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('web_auth.change_password') }}">{{ current_user.email }}</a></li>
+            <li><a href="{{ url_for('web_auth.logout') }}">Logout</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

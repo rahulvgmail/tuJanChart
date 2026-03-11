@@ -34,6 +34,19 @@ def init_redis(redis_url: str) -> None:
     redis_client = Redis.from_url(redis_url, decode_responses=True)
 
 
+@login_manager.user_loader
+def load_user(user_id):
+    """Load user by ID for Flask-Login session management."""
+    if DbSession is None:
+        return None
+    session = DbSession()
+    try:
+        from stockpulse.models.user import User
+        return session.query(User).filter(User.id == int(user_id)).first()
+    except Exception:
+        return None
+
+
 def init_celery(app=None) -> Celery:
     if app:
         celery_app.conf.broker_url = app.config["REDIS_URL"]
