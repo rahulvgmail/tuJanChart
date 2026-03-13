@@ -2,14 +2,14 @@
 {% block title %}{{ stock.company_name }} - StockPulse{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center;">
+<div class="stock-header">
     <div>
         <h1>{{ stock.company_name }}</h1>
-        <p>{{ stock.nse_symbol or stock.symbol }} | {{ stock.sector or 'N/A' }} | {{ stock.industry or 'N/A' }}</p>
+        <p class="stock-meta">{{ stock.nse_symbol or stock.symbol }} | {{ stock.sector or 'N/A' }} | {{ stock.industry or 'N/A' }}</p>
     </div>
     <div>
-        <form method="post" action="{{ url_for('dashboard.toggle_watchlist', stock_id=stock.id) }}" style="display:inline">
-            <button type="submit" class="{{ 'secondary' if in_watchlist else 'outline' }}" style="padding: 0.5rem 1rem;">
+        <form method="post" action="{{ url_for('dashboard.toggle_watchlist', stock_id=stock.id) }}">
+            <button type="submit" class="{{ 'secondary' if in_watchlist else 'outline' }} btn-watchlist">
                 {{ 'Remove from Watchlist' if in_watchlist else 'Add to Watchlist' }}
             </button>
         </form>
@@ -20,13 +20,21 @@
 <p>Color: <mark>{{ color }}</mark></p>
 {% endif %}
 
+<div id="chart-toolbar" class="chart-toolbar">
+    <button class="outline btn-sm" data-period="30d">1M</button>
+    <button class="outline btn-sm" data-period="90d">3M</button>
+    <button class="outline btn-sm" data-period="180d">6M</button>
+    <button class="contrast btn-sm" data-period="365d">1Y</button>
+</div>
+<div id="price-chart" data-symbol="{{ stock.nse_symbol or stock.symbol }}"></div>
+
 {% if indicator %}
-<div class="grid">
+<div class="indicator-cards">
     <article>
         <header>Price</header>
         <h2>{{ '%.2f'|format(indicator.current_price) if indicator.current_price else 'N/A' }}</h2>
         {% if indicator.pct_change %}
-        <p style="color: {{ 'green' if indicator.pct_change > 0 else 'red' }}">
+        <p class="{{ 'text-positive' if indicator.pct_change > 0 else 'text-negative' }}">
             {{ '%+.2f'|format(indicator.pct_change) }}%
         </p>
         {% endif %}
@@ -44,6 +52,7 @@
 </div>
 
 <h3>Moving Averages</h3>
+<div class="table-wrap">
 <table>
     <thead>
         <tr><th>Period</th><th>DMA</th><th>Touch</th><th>Signal</th><th>WMA</th><th>Touch</th><th>Signal</th></tr>
@@ -90,8 +99,9 @@
         </tr>
     </tbody>
 </table>
+</div>
 
-<div class="grid">
+<div class="indicator-cards">
     <article>
         <header>Gap</header>
         <p>{{ '%.2f'|format(indicator.gap_pct) if indicator.gap_pct else '-' }}%</p>
@@ -118,11 +128,11 @@
 
 <hr>
 
-<div class="grid" style="grid-template-columns: 1fr 1fr;">
+<div class="color-note-grid">
     <section>
         <h3>Set Color</h3>
         <form method="post" action="{{ url_for('dashboard.set_color', symbol=stock.nse_symbol or stock.symbol) }}">
-            <div class="grid" style="grid-template-columns: 1fr auto;">
+            <div class="color-form-row">
                 <select name="color">
                     {% for c in ['Green', 'Yellow', 'Red', 'White', 'Blue'] %}
                     <option value="{{ c }}" {{ 'selected' if color == c else '' }}>{{ c }}</option>
@@ -156,6 +166,7 @@
 
 {% if events %}
 <h3>Recent Events</h3>
+<div class="table-wrap">
 <table>
     <thead><tr><th>Time</th><th>Type</th><th>Details</th></tr></thead>
     <tbody>
@@ -174,10 +185,12 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% endif %}
 
 {% if memberships %}
 <h3>Screener Memberships</h3>
+<div class="table-wrap">
 <table>
     <thead><tr><th>Screener</th><th>Entered</th></tr></thead>
     <tbody>
@@ -189,5 +202,15 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('web.static', filename='css/stock-chart.css') }}">
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://unpkg.com/lightweight-charts@4/dist/lightweight-charts.standalone.production.js"></script>
+<script src="{{ url_for('web.static', filename='js/stock-chart.js') }}"></script>
 {% endblock %}

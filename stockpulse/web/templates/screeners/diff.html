@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{{ screener.name }} — Changes - StockPulse{% endblock %}
+
+{% block content %}
+<div class="screener-tabs">
+    <a href="{{ url_for('dashboard.screener_results', screener_id=screener.id) }}">Current Results</a>
+    <a href="{{ url_for('dashboard.screener_diff', screener_id=screener.id) }}" class="active">Changes</a>
+</div>
+
+<h1>{{ screener.name }}</h1>
+{% if screener.description %}<p>{{ screener.description }}</p>{% endif %}
+
+{% if not as_of %}
+<p>No screener history recorded yet. History is generated after indicator recomputation.</p>
+{% else %}
+
+{# Date navigation #}
+<div class="diff-nav">
+    {% if prev_date %}
+    <a href="?date={{ prev_date.isoformat() }}" class="outline" role="button">&larr; {{ prev_date.strftime('%d %b') }}</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+
+    <div class="diff-date-picker">
+        <strong>{{ as_of.strftime('%d %b %Y') }}</strong>
+        <details class="dropdown">
+            <summary class="outline btn-sm">Jump to date</summary>
+            <ul>
+                {% for d in history_dates %}
+                <li><a href="?date={{ d.isoformat() }}">{{ d.strftime('%d %b %Y') }}{% if d == as_of %} &bull;{% endif %}</a></li>
+                {% endfor %}
+            </ul>
+        </details>
+    </div>
+
+    {% if next_date %}
+    <a href="?date={{ next_date.isoformat() }}" class="outline" role="button">{{ next_date.strftime('%d %b') }} &rarr;</a>
+    {% else %}
+    <span></span>
+    {% endif %}
+</div>
+
+{# Summary badges #}
+<div class="diff-summary">
+    <span class="badge badge-entry">{{ entries|length }} entered</span>
+    <span class="badge badge-exit">{{ exits|length }} exited</span>
+    <span class="badge badge-neutral">{{ total_in }} total in screener</span>
+</div>
+
+{# Entries table #}
+{% if entries %}
+<h3 class="diff-section-header text-positive">New Entries</h3>
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Symbol</th>
+            <th>Price</th>
+            <th>% Chg</th>
+            <th>DMA 10</th>
+            <th>DMA 20</th>
+            <th>DMA 50</th>
+            <th>Volume</th>
+            <th>Sector</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in entries %}
+        <tr class="row-entry">
+            <td><a href="{{ url_for('dashboard.stock_detail', symbol=r.symbol) }}">{{ r.company_name }}</a></td>
+            <td>{{ r.symbol }}</td>
+            <td>{{ '%.2f'|format(r.current_price) if r.current_price else '-' }}</td>
+            <td class="{{ 'text-positive' if r.pct_change and r.pct_change > 0 else 'text-negative' if r.pct_change and r.pct_change < 0 else '' }}">
+                {{ '%.2f'|format(r.pct_change) if r.pct_change else '-' }}%
+            </td>
+            <td>
+                {{ '%.2f'|format(r.dma_10) if r.dma_10 else '-' }}
+                {% if r.dma_10_signal %}<small>({{ r.dma_10_signal }})</small>{% endif %}
+            </td>
+            <td>
+                {{ '%.2f'|format(r.dma_20) if r.dma_20 else '-' }}
+                {% if r.dma_20_signal %}<small>({{ r.dma_20_signal }})</small>{% endif %}
+            </td>
+            <td>
+                {{ '%.2f'|format(r.dma_50) if r.dma_50 else '-' }}
+                {% if r.dma_50_signal %}<small>({{ r.dma_50_signal }})</small>{% endif %}
+            </td>
+            <td>{{ '{:,.0f}'.format(r.today_volume) if r.today_volume else '-' }}</td>
+            <td>{{ r.sector or '-' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
+{# Exits table #}
+{% if exits %}
+<h3 class="diff-section-header text-negative">Exits</h3>
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr>
+            <th>Company</th>
+            <th>Symbol</th>
+            <th>Price</th>
+            <th>% Chg</th>
+            <th>DMA 10</th>
+            <th>DMA 20</th>
+            <th>DMA 50</th>
+            <th>Volume</th>
+            <th>Sector</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in exits %}
+        <tr class="row-exit">
+            <td><a href="{{ url_for('dashboard.stock_detail', symbol=r.symbol) }}">{{ r.company_name }}</a></td>
+            <td>{{ r.symbol }}</td>
+            <td>{{ '%.2f'|format(r.current_price) if r.current_price else '-' }}</td>
+            <td class="{{ 'text-positive' if r.pct_change and r.pct_change > 0 else 'text-negative' if r.pct_change and r.pct_change < 0 else '' }}">
+                {{ '%.2f'|format(r.pct_change) if r.pct_change else '-' }}%
+            </td>
+            <td>
+                {{ '%.2f'|format(r.dma_10) if r.dma_10 else '-' }}
+                {% if r.dma_10_signal %}<small>({{ r.dma_10_signal }})</small>{% endif %}
+            </td>
+            <td>
+                {{ '%.2f'|format(r.dma_20) if r.dma_20 else '-' }}
+                {% if r.dma_20_signal %}<small>({{ r.dma_20_signal }})</small>{% endif %}
+            </td>
+            <td>
+                {{ '%.2f'|format(r.dma_50) if r.dma_50 else '-' }}
+                {% if r.dma_50_signal %}<small>({{ r.dma_50_signal }})</small>{% endif %}
+            </td>
+            <td>{{ '{:,.0f}'.format(r.today_volume) if r.today_volume else '-' }}</td>
+            <td>{{ r.sector or '-' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
+{% if not entries and not exits %}
+<p>No changes on this date. All stocks remained in (or out of) the screener.</p>
+{% endif %}
+
+{% endif %}
+{% endblock %}

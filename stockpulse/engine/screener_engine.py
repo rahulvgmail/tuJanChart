@@ -11,6 +11,7 @@ from sqlalchemy import and_, or_, desc
 from sqlalchemy.orm import Session
 
 from stockpulse.models.annotation import ColorClassification
+from stockpulse.models.event import Event
 from stockpulse.models.indicator import StockIndicator
 from stockpulse.models.screener import Screener, ScreenerCondition, ScreenerHistory
 from stockpulse.models.stock import Stock
@@ -274,23 +275,17 @@ class ScreenerEngine:
         """Record which stocks match a screener on a given date.
 
         Compares to previous date to detect entries and exits.
-        Returns {entered: int, exited: int}.
+        Creates SCREENER_ENTRY / SCREENER_EXIT Event records.
+        Returns {entered: int, exited: int, events: int}.
         """
+        screener = self.session.query(Screener).filter(Screener.id == screener_id).first()
+        if not screener:
+            return {"entered": 0, "exited": 0, "events": 0}
+
         # Get current matches
         current_results = self.evaluate(screener_id, as_of)
         current_ids = {r["stock_id"] for r in current_results}
 
-        # Get previous date's matches from history
-        prev_record = (
-            self.session.query(ScreenerHistory.stock_id)
-            .filter(
-                ScreenerHistory.screener_id == screener_id,
-                ScreenerHistory.date < as_of,
-                ScreenerHistory.entered == True,
-            )
-            .order_by(desc(ScreenerHistory.date))
-            .all()
-        )
         # Get the most recent history date
         prev_date_row = (
             self.session.query(ScreenerHistory.date)
@@ -317,8 +312,9 @@ class ScreenerEngine:
 
         entered = current_ids - prev_ids
         exited = prev_ids - current_ids
+        event_count = 0
 
-        # Record entries
+        # Record entries + create events
         for sid in entered:
             self.session.add(
                 ScreenerHistory(
@@ -328,8 +324,20 @@ class ScreenerEngine:
                     entered=True,
                 )
             )
+            self.session.add(
+                Event(
+                    stock_id=sid,
+                    event_type="SCREENER_ENTRY",
+                    payload={
+                        "screener_id": screener_id,
+                        "screener_name": screener.name,
+                        "screener_slug": screener.slug,
+                    },
+                )
+            )
+            event_count += 1
 
-        # Record exits
+        # Record exits + create events
         for sid in exited:
             self.session.add(
                 ScreenerHistory(
@@ -339,8 +347,20 @@ class ScreenerEngine:
                     entered=False,
                 )
             )
+            self.session.add(
+                Event(
+                    stock_id=sid,
+                    event_type="SCREENER_EXIT",
+                    payload={
+                        "screener_id": screener_id,
+                        "screener_name": screener.name,
+                        "screener_slug": screener.slug,
+                    },
+                )
+            )
+            event_count += 1
 
-        return {"entered": len(entered), "exited": len(exited)}
+        return {"entered": len(entered), "exited": len(exited), "events": event_count}
 
 
 def _indicator_to_dict(indicator: StockIndicator, stock: Stock) -> dict:

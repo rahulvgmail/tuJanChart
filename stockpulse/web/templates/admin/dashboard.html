@@ -6,6 +6,7 @@
 
 <section>
     <h2>Users</h2>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
@@ -27,8 +28,8 @@
                 <td>{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') if user.last_login_at else 'Never' }}</td>
                 <td>
                     {% if user.id != current_user.id %}
-                    <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}" style="display:inline">
-                        <button type="submit" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+                    <form method="post" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+                        <button type="submit" class="secondary outline btn-sm">
                             {{ 'Deactivate' if user.is_active else 'Activate' }}
                         </button>
                     </form>
@@ -38,6 +39,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <details>
         <summary>Invite New User</summary>
@@ -68,6 +70,7 @@
 
 <section>
     <h2>API Keys</h2>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
@@ -89,8 +92,8 @@
                 <td>{{ key.last_used_at.strftime('%Y-%m-%d %H:%M') if key.last_used_at else 'Never' }}</td>
                 <td>
                     {% if key.is_active %}
-                    <form method="post" action="{{ url_for('admin.revoke_api_key', key_id=key.id) }}" style="display:inline">
-                        <button type="submit" class="secondary outline" style="padding: 0.25rem 0.5rem; font-size: 0.85rem;">Revoke</button>
+                    <form method="post" action="{{ url_for('admin.revoke_api_key', key_id=key.id) }}">
+                        <button type="submit" class="secondary outline btn-sm">Revoke</button>
                     </form>
                     {% endif %}
                 </td>
@@ -98,6 +101,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
 
     <details>
         <summary>Create API Key</summary>

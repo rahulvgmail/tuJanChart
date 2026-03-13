@@ -2,7 +2,7 @@
 {% block title %}Screeners - StockPulse{% endblock %}
 
 {% block content %}
-<div class="grid" style="grid-template-columns: 250px 1fr;">
+<div class="screener-layout">
     <aside>
         <h2>Screeners</h2>
         <nav>
@@ -11,7 +11,10 @@
                 <summary><strong>{{ category }}</strong> ({{ screeners|length }})</summary>
                 <ul>
                     {% for s in screeners %}
-                    <li><a href="{{ url_for('dashboard.screener_results', screener_id=s.id) }}">{{ s.name }}</a></li>
+                    <li>
+                        <a href="{{ url_for('dashboard.screener_results', screener_id=s.id) }}">{{ s.name }}</a>
+                        <a href="{{ url_for('dashboard.screener_diff', screener_id=s.id) }}" class="diff-link" title="View changes">&Delta;</a>
+                    </li>
                     {% endfor %}
                 </ul>
             </details>

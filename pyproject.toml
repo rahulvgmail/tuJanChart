@@ -52,3 +52,7 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.9",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

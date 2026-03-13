@@ -1,0 +1,462 @@
+/* StockPulse — Custom styles on top of Pico CSS */
+
+/* ── Brand / Layout ─────────────────────────────────────────── */
+
+:root {
+    --sp-green: #16a34a;
+    --sp-red: #dc2626;
+    --sp-blue: #2563eb;
+    --sp-yellow: #ca8a04;
+    --sp-muted: #6b7280;
+    --sp-border: #e5e7eb;
+    --sp-bg-subtle: #f9fafb;
+    --sp-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+body {
+    background: var(--sp-bg-subtle);
+}
+
+nav {
+    padding: 0.5rem 1rem;
+    background: var(--pico-background-color);
+    border-bottom: 1px solid var(--sp-border);
+}
+
+main {
+    padding: 1rem;
+}
+
+/* ── Flash Messages ─────────────────────────────────────────── */
+
+.flash-messages {
+    margin: 1rem 0;
+}
+
+.flash {
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.925rem;
+}
+
+.flash-error {
+    background: #fef2f2;
+    border-left: 4px solid var(--sp-red);
+    color: #991b1b;
+}
+
+.flash-success {
+    background: #f0fdf4;
+    border-left: 4px solid var(--sp-green);
+    color: #166534;
+}
+
+.flash-info {
+    background: #eff6ff;
+    border-left: 4px solid var(--sp-blue);
+    color: #1e40af;
+}
+
+/* ── Positive / Negative values ─────────────────────────────── */
+
+.text-positive {
+    color: var(--sp-green);
+    font-weight: 600;
+}
+
+.text-negative {
+    color: var(--sp-red);
+    font-weight: 600;
+}
+
+.text-muted {
+    color: var(--sp-muted);
+}
+
+/* ── Summary Cards (Dashboard) ──────────────────────────────── */
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+.summary-cards article {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--sp-card-shadow);
+    transition: box-shadow 0.15s ease;
+    text-align: center;
+}
+
+.summary-cards article[role="button"] {
+    cursor: pointer;
+}
+
+.summary-cards article[role="button"]:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.summary-cards article header {
+    padding: 0;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--sp-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: none;
+    border: none;
+}
+
+.summary-cards article h2 {
+    margin: 0;
+    font-size: 2.25rem;
+    font-weight: 700;
+}
+
+/* ── Screeners Sidebar Layout ───────────────────────────────── */
+
+.screener-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 1.5rem;
+}
+
+.screener-layout aside {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+}
+
+.screener-layout aside details {
+    margin-bottom: 0.25rem;
+}
+
+.screener-layout aside details summary {
+    font-size: 0.925rem;
+}
+
+.screener-layout aside ul {
+    padding-left: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.screener-layout aside ul li {
+    font-size: 0.875rem;
+    padding: 0.15rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.diff-link {
+    font-size: 0.75rem;
+    color: var(--sp-muted);
+    text-decoration: none;
+    padding: 0 0.25rem;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+
+.diff-link:hover {
+    opacity: 1;
+    color: var(--pico-primary);
+}
+
+/* ── Screener Builder ───────────────────────────────────────── */
+
+.builder-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.condition-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Stock Detail ───────────────────────────────────────────── */
+
+.stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.stock-header h1 {
+    margin-bottom: 0;
+}
+
+.stock-meta {
+    color: var(--sp-muted);
+    font-size: 0.925rem;
+}
+
+.color-note-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+.color-form-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: end;
+}
+
+/* ── Tables ─────────────────────────────────────────────────── */
+
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    font-size: 0.9rem;
+}
+
+table thead th {
+    white-space: nowrap;
+    font-size: 0.825rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--sp-muted);
+}
+
+table thead th a {
+    color: inherit;
+    text-decoration: none;
+}
+
+table thead th a:hover {
+    color: var(--pico-primary);
+}
+
+table tbody tr:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* ── Indicator Cards ────────────────────────────────────────── */
+
+.indicator-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.indicator-cards article {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    box-shadow: var(--sp-card-shadow);
+}
+
+.indicator-cards article header {
+    padding: 0;
+    margin: 0 0 0.5rem 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--sp-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: none;
+    border: none;
+}
+
+/* ── Screener Tabs ─────────────────────────────────────────── */
+
+.screener-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--sp-border);
+}
+
+.screener-tabs a {
+    padding: 0.5rem 1.25rem;
+    text-decoration: none;
+    color: var(--sp-muted);
+    font-weight: 500;
+    font-size: 0.925rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.screener-tabs a:hover {
+    color: var(--pico-primary);
+}
+
+.screener-tabs a.active {
+    color: var(--pico-primary);
+    border-bottom-color: var(--pico-primary);
+    font-weight: 600;
+}
+
+/* ── Screener Diff ─────────────────────────────────────────── */
+
+.diff-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+}
+
+.diff-date-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.diff-date-picker .dropdown {
+    display: inline-block;
+    margin: 0;
+}
+
+.diff-date-picker .dropdown ul {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.diff-summary {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badge-entry {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-exit {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-neutral {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.diff-section-header {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+tr.row-entry {
+    border-left: 3px solid var(--sp-green);
+}
+
+tr.row-exit {
+    border-left: 3px solid var(--sp-red);
+}
+
+/* ── Buttons ────────────────────────────────────────────────── */
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.btn-watchlist {
+    padding: 0.5rem 1rem;
+}
+
+/* ── Auth Pages ─────────────────────────────────────────────── */
+
+.auth-card {
+    max-width: 400px;
+    margin: 4rem auto;
+}
+
+.auth-card-compact {
+    max-width: 400px;
+    margin: 2rem auto;
+}
+
+/* ── HTMX Loading Indicator ─────────────────────────────────── */
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline-block;
+}
+
+.htmx-request.htmx-indicator {
+    display: inline-block;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .screener-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .screener-layout aside {
+        position: static;
+        max-height: none;
+    }
+
+    .builder-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .condition-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .indicator-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .color-note-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stock-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .indicator-cards {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .summary-cards {
+        grid-template-columns: 1fr;
+    }
+
+    .indicator-cards {
+        grid-template-columns: 1fr;
+    }
+}

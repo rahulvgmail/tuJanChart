@@ -2,6 +2,11 @@
 {% block title %}{{ screener.name }} - StockPulse{% endblock %}
 
 {% block content %}
+<div class="screener-tabs">
+    <a href="{{ url_for('dashboard.screener_results', screener_id=screener.id) }}" class="active">Current Results</a>
+    <a href="{{ url_for('dashboard.screener_diff', screener_id=screener.id) }}">Changes</a>
+</div>
+
 <h1>{{ screener.name }}</h1>
 {% if screener.description %}<p>{{ screener.description }}</p>{% endif %}
 <p><strong>{{ results|length }}</strong> matching stocks</p>
@@ -32,7 +37,7 @@
 </details>
 
 {% if results %}
-<div style="overflow-x: auto;">
+<div class="table-wrap">
 <table>
     <thead>
         <tr>
@@ -53,7 +58,7 @@
             <td><a href="{{ url_for('dashboard.stock_detail', symbol=r.nse_symbol or r.symbol) }}">{{ r.company_name }}</a></td>
             <td>{{ r.nse_symbol or r.symbol }}</td>
             <td>{{ '%.2f'|format(r.current_price) if r.current_price else '-' }}</td>
-            <td style="color: {{ 'green' if r.pct_change and r.pct_change > 0 else 'red' if r.pct_change and r.pct_change < 0 else 'inherit' }}">
+            <td class="{{ 'text-positive' if r.pct_change and r.pct_change > 0 else 'text-negative' if r.pct_change and r.pct_change < 0 else '' }}">
                 {{ '%.2f'|format(r.pct_change) if r.pct_change else '-' }}%
             </td>
             <td>

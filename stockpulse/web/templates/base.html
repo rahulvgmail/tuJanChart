@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}StockPulse{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-    <style>
-        nav { padding: 0.5rem 1rem; }
-        .flash-messages { margin: 1rem 0; }
-        .flash { padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 0.5rem; }
-        .flash-error { background: #fee; border-left: 4px solid #c00; }
-        .flash-success { background: #efe; border-left: 4px solid #0a0; }
-        .flash-info { background: #eef; border-left: 4px solid #00c; }
-        main { padding: 1rem; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('web.static', filename='css/app.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>

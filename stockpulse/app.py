@@ -25,10 +25,13 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # Register blueprints
     from stockpulse.api import api_bp
-    from stockpulse.web import web_bp
+    from stockpulse.web import web_bp, dashboard_bp, web_auth_bp, admin_bp
 
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(web_bp)
+    app.register_blueprint(dashboard_bp)
+    app.register_blueprint(web_auth_bp)
+    app.register_blueprint(admin_bp)
 
     # Health check
     @app.route("/healthz")

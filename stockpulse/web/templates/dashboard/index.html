@@ -6,27 +6,14 @@
 {% if latest_date %}
 <p>Data as of <strong>{{ latest_date.isoformat() }}</strong></p>
 
-<div class="grid">
-    <article>
-        <header>52W Closing Highs</header>
-        <h2>{{ summary.highs_52w or 0 }}</h2>
+<div class="summary-cards">
+    {% for key, label in [('highs_52w', '52W Closing Highs'), ('volume_breakouts', 'Volume Breakouts'), ('gap_ups', 'Gap Ups'), ('highs_90d', '90D Highs'), ('active_stocks', 'Active Stocks')] %}
+    {% set link = card_links.get(key) if key != 'active_stocks' else none %}
+    <article {% if link %}role="button" onclick="window.location='{{ link }}'"{% endif %}>
+        <header>{{ label }}</header>
+        <h2>{{ summary.get(key, 0) }}</h2>
     </article>
-    <article>
-        <header>Volume Breakouts</header>
-        <h2>{{ summary.volume_breakouts or 0 }}</h2>
-    </article>
-    <article>
-        <header>Gap Ups</header>
-        <h2>{{ summary.gap_ups or 0 }}</h2>
-    </article>
-    <article>
-        <header>90D Highs</header>
-        <h2>{{ summary.highs_90d or 0 }}</h2>
-    </article>
-    <article>
-        <header>Active Stocks</header>
-        <h2>{{ summary.active_stocks or 0 }}</h2>
-    </article>
+    {% endfor %}
 </div>
 {% else %}
 <p>No indicator data yet. Run the data pipeline to get started.</p>

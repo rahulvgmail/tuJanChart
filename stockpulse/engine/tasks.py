@@ -61,9 +61,8 @@ def recompute_universe(self, as_of_str: str | None = None):
             elapsed,
         )
 
-        # Chain: trigger event detection and webhook dispatch
-        from stockpulse.webhooks.tasks import process_events
-        process_events.delay(as_of.isoformat())
+        # Chain: screener history → event detection → webhook dispatch
+        record_screener_history.delay(as_of.isoformat())
 
         return {
             "status": "ok",
@@ -107,5 +106,67 @@ def compute_single_stock(self, stock_id: int, as_of_str: str | None = None):
         session.rollback()
         logger.exception("Compute failed for stock %d", stock_id)
         return {"status": "error", "stock_id": stock_id}
+    finally:
+        session.close()
+
+
+@celery_app.task(name="engine.record_screener_history", bind=True)
+def record_screener_history(self, as_of_str: str | None = None):
+    """Record screener entry/exit history and generate events.
+
+    Runs after indicator recomputation, before event detection.
+    Chains to process_events when done.
+    """
+    as_of = date.fromisoformat(as_of_str) if as_of_str else date.today()
+    session = get_db()
+
+    try:
+        from stockpulse.engine.screener_engine import ScreenerEngine
+        from stockpulse.models.screener import Screener
+
+        engine = ScreenerEngine(session)
+
+        screener_ids = [
+            sid for (sid,) in session.query(Screener.id)
+            .filter(Screener.is_active == True)
+            .all()
+        ]
+
+        if not screener_ids:
+            logger.info("No active screeners to process")
+        else:
+            total_entered = 0
+            total_exited = 0
+            total_events = 0
+
+            for sid in screener_ids:
+                try:
+                    result = engine.record_history(sid, as_of)
+                    total_entered += result["entered"]
+                    total_exited += result["exited"]
+                    total_events += result["events"]
+                except Exception:
+                    logger.exception("Screener history failed for screener %d", sid)
+
+            session.commit()
+            logger.info(
+                "Screener history: %d screeners, %d entries, %d exits, %d events",
+                len(screener_ids), total_entered, total_exited, total_events,
+            )
+
+        # Chain: trigger event detection and webhook dispatch
+        from stockpulse.webhooks.tasks import process_events
+        process_events.delay(as_of.isoformat())
+
+        return {
+            "status": "ok",
+            "date": as_of.isoformat(),
+            "screeners": len(screener_ids),
+        }
+
+    except Exception:
+        session.rollback()
+        logger.exception("Screener history recording failed")
+        return {"status": "error"}
     finally:
         session.close()

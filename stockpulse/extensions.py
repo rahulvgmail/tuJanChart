@@ -11,21 +11,40 @@ DbSession: sessionmaker[Session] | None = None
 login_manager = LoginManager()
 login_manager.login_view = "web_auth.login"
 
-celery_app = Celery("stockpulse")
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+_database_url = os.getenv("DATABASE_URL", "postgresql://stockpulse:stockpulse@localhost:5432/stockpulse")
+
+celery_app = Celery(
+    "stockpulse",
+    broker=_redis_url,
+    backend=_redis_url,
+)
+celery_app.conf.task_serializer = "json"
+celery_app.conf.result_serializer = "json"
+celery_app.conf.accept_content = ["json"]
+celery_app.conf.timezone = "Asia/Kolkata"
+celery_app.conf.enable_utc = True
+celery_app.autodiscover_tasks(["stockpulse.ingestion", "stockpulse.engine", "stockpulse.webhooks"])
 
 redis_client: Redis | None = None
 
 
 def init_db(database_url: str) -> None:
     global db_engine, DbSession
-    db_engine = create_engine(database_url, pool_size=10, max_overflow=20)
+    db_engine = create_engine(database_url, pool_size=20, max_overflow=40, pool_pre_ping=True)
     DbSession = sessionmaker(bind=db_engine)
 
 
 def get_db() -> Session:
     """Get a new database session. Caller must close it."""
     if DbSession is None:
-        raise RuntimeError("Database not initialized. Call init_db first.")
+        # Auto-init from env var (for Celery workers)
+        init_db(_database_url)
     return DbSession()
 
 

@@ -15,11 +15,8 @@ def index():
     return redirect(url_for("dashboard.index"))
 
 
-# Register sub-blueprints
-from stockpulse.web.auth_views import web_auth_bp
-from stockpulse.web.admin_views import admin_bp
-from stockpulse.web.views import dashboard_bp
-
-web_bp.register_blueprint(web_auth_bp)
-web_bp.register_blueprint(admin_bp)
-web_bp.register_blueprint(dashboard_bp)
+# Import sub-blueprints — registered directly on the app (not nested)
+# to keep endpoint names short: dashboard.index, web_auth.login, admin.dashboard
+from stockpulse.web.auth_views import web_auth_bp  # noqa: F401, E402
+from stockpulse.web.admin_views import admin_bp  # noqa: F401, E402
+from stockpulse.web.views import dashboard_bp  # noqa: F401, E402

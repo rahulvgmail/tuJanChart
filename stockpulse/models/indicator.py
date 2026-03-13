@@ -65,7 +65,7 @@ class StockIndicator(Base):
     is_52w_closing_high: Mapped[bool] = mapped_column(Boolean, default=False)
     was_52w_high_yesterday: Mapped[bool] = mapped_column(Boolean, default=False)
     prev_52w_closing_high: Mapped[float | None] = mapped_column(Numeric(12, 2))
-    high_52w_date: Mapped[date | None] = mapped_column(Date)
+    high_52w_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Volume analytics
     max_vol_21d: Mapped[int | None] = mapped_column(BigInteger)

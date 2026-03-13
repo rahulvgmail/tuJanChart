@@ -1,0 +1,19 @@
+/* Stock chart styles */
+
+#price-chart {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+}
+
+.chart-toolbar {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.chart-toolbar button {
+    margin: 0;
+    width: auto;
+}

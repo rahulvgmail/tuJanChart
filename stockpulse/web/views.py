@@ -1,6 +1,6 @@
 """Main web views: dashboard, screeners, stock detail, watchlist."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -10,7 +10,8 @@ from stockpulse.extensions import get_db
 from stockpulse.models.annotation import ColorClassification, Note
 from stockpulse.models.event import Event
 from stockpulse.models.indicator import StockIndicator
-from stockpulse.models.screener import Screener, ScreenerCondition
+from stockpulse.models.price import DailyPrice
+from stockpulse.models.screener import Screener, ScreenerCondition, ScreenerHistory
 from stockpulse.models.stock import Stock
 from stockpulse.models.watchlist import Watchlist
 
@@ -75,6 +76,27 @@ def index():
                 .scalar()
             )
 
+        # Screener links for summary cards
+        card_slugs = {
+            "highs_52w": "52w-closing-high-today",
+            "volume_breakouts": "volume-breakout",
+            "gap_ups": "gap-up-today",
+            "highs_90d": "90d-high-today",
+        }
+        card_links = {}
+        if summary:
+            slug_rows = (
+                session.query(Screener.slug, Screener.id)
+                .filter(Screener.slug.in_(card_slugs.values()))
+                .all()
+            )
+            slug_to_id = {row.slug: row.id for row in slug_rows}
+            for key, slug in card_slugs.items():
+                if slug in slug_to_id:
+                    card_links[key] = url_for(
+                        "dashboard.screener_results", screener_id=slug_to_id[slug]
+                    )
+
         # Recent events (last 50)
         recent_events = (
             session.query(Event, Stock)
@@ -87,6 +109,7 @@ def index():
         return render_template(
             "dashboard/index.html",
             summary=summary,
+            card_links=card_links,
             latest_date=latest_date,
             recent_events=recent_events,
         )
@@ -174,6 +197,143 @@ def screener_results(screener_id):
             results=results,
             sort_by=sort_by,
             sort_desc=sort_desc,
+        )
+    finally:
+        session.close()
+
+
+@dashboard_bp.route("/screeners/<int:screener_id>/diff")
+@login_required
+def screener_diff(screener_id):
+    """Show stocks that entered/exited a screener, with date navigation."""
+    session = get_db()
+    try:
+        screener = session.query(Screener).filter(Screener.id == screener_id).first()
+        if not screener:
+            flash("Screener not found.", "error")
+            return redirect(url_for("dashboard.screener_list"))
+
+        # Get all dates that have history for this screener
+        history_dates = [
+            row.date
+            for row in session.query(ScreenerHistory.date)
+            .filter(ScreenerHistory.screener_id == screener_id)
+            .distinct()
+            .order_by(desc(ScreenerHistory.date))
+            .limit(90)
+            .all()
+        ]
+
+        if not history_dates:
+            return render_template(
+                "screeners/diff.html",
+                screener=screener,
+                as_of=None,
+                entries=[],
+                exits=[],
+                history_dates=[],
+                prev_date=None,
+                next_date=None,
+            )
+
+        # Determine the viewing date
+        date_str = request.args.get("date")
+        if date_str:
+            try:
+                as_of = date.fromisoformat(date_str)
+            except ValueError:
+                as_of = history_dates[0]
+        else:
+            as_of = history_dates[0]
+
+        # Find prev/next dates for navigation
+        prev_date = None
+        next_date = None
+        if as_of in history_dates:
+            idx = history_dates.index(as_of)
+            if idx < len(history_dates) - 1:
+                prev_date = history_dates[idx + 1]  # older
+            if idx > 0:
+                next_date = history_dates[idx - 1]  # newer
+
+        # Get entries (entered=True) on this date
+        entry_rows = (
+            session.query(ScreenerHistory, Stock, StockIndicator)
+            .join(Stock, ScreenerHistory.stock_id == Stock.id)
+            .outerjoin(
+                StockIndicator,
+                (StockIndicator.stock_id == ScreenerHistory.stock_id)
+                & (StockIndicator.date == ScreenerHistory.date),
+            )
+            .filter(
+                ScreenerHistory.screener_id == screener_id,
+                ScreenerHistory.date == as_of,
+                ScreenerHistory.entered == True,
+            )
+            .all()
+        )
+
+        # Get exits (entered=False) on this date
+        exit_rows = (
+            session.query(ScreenerHistory, Stock, StockIndicator)
+            .join(Stock, ScreenerHistory.stock_id == Stock.id)
+            .outerjoin(
+                StockIndicator,
+                (StockIndicator.stock_id == ScreenerHistory.stock_id)
+                & (StockIndicator.date == ScreenerHistory.date),
+            )
+            .filter(
+                ScreenerHistory.screener_id == screener_id,
+                ScreenerHistory.date == as_of,
+                ScreenerHistory.entered == False,
+            )
+            .all()
+        )
+
+        def _row_to_dict(history, stock, indicator):
+            d = {
+                "symbol": stock.nse_symbol or stock.symbol,
+                "company_name": stock.company_name,
+                "sector": stock.sector,
+            }
+            if indicator:
+                d.update(
+                    current_price=float(indicator.current_price) if indicator.current_price else None,
+                    pct_change=float(indicator.pct_change) if indicator.pct_change else None,
+                    today_volume=indicator.today_volume,
+                    dma_10=float(indicator.dma_10) if indicator.dma_10 else None,
+                    dma_10_signal=indicator.dma_10_signal,
+                    dma_20=float(indicator.dma_20) if indicator.dma_20 else None,
+                    dma_20_signal=indicator.dma_20_signal,
+                    dma_50=float(indicator.dma_50) if indicator.dma_50 else None,
+                    dma_50_signal=indicator.dma_50_signal,
+                )
+            return d
+
+        entries = [_row_to_dict(*row) for row in entry_rows]
+        exits = [_row_to_dict(*row) for row in exit_rows]
+
+        # Count how many stocks are currently in the screener on this date
+        total_in = (
+            session.query(func.count(ScreenerHistory.id))
+            .filter(
+                ScreenerHistory.screener_id == screener_id,
+                ScreenerHistory.date == as_of,
+                ScreenerHistory.entered == True,
+            )
+            .scalar()
+        )
+
+        return render_template(
+            "screeners/diff.html",
+            screener=screener,
+            as_of=as_of,
+            entries=entries,
+            exits=exits,
+            total_in=total_in,
+            history_dates=history_dates[:30],
+            prev_date=prev_date,
+            next_date=next_date,
         )
     finally:
         session.close()
@@ -322,6 +482,52 @@ def stock_detail(symbol):
             in_watchlist=in_watchlist,
             memberships=memberships,
         )
+    finally:
+        session.close()
+
+
+@dashboard_bp.route("/stocks/<symbol>/prices.json")
+@login_required
+def stock_prices_json(symbol):
+    """JSON endpoint for chart data (session-auth, no API key needed)."""
+    from datetime import date, timedelta
+
+    session = get_db()
+    try:
+        stock = (
+            session.query(Stock)
+            .filter((Stock.nse_symbol == symbol) | (Stock.symbol == symbol))
+            .first()
+        )
+        if not stock:
+            return jsonify({"error": "Stock not found"}), 404
+
+        period_str = request.args.get("period", "365d")
+        try:
+            days = int(period_str.rstrip("d"))
+        except ValueError:
+            days = 365
+
+        cutoff = date.today() - timedelta(days=days)
+
+        prices = (
+            session.query(DailyPrice)
+            .filter(DailyPrice.stock_id == stock.id, DailyPrice.date >= cutoff)
+            .order_by(DailyPrice.date)
+            .all()
+        )
+
+        return jsonify([
+            {
+                "time": p.date.isoformat(),
+                "open": float(p.open) if p.open else None,
+                "high": float(p.high) if p.high else None,
+                "low": float(p.low) if p.low else None,
+                "close": float(p.close) if p.close else None,
+                "volume": int(p.volume) if p.volume else None,
+            }
+            for p in prices
+        ])
     finally:
         session.close()
 

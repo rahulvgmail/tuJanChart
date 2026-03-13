@@ -8,6 +8,7 @@ from sqlalchemy import desc
 from stockpulse.api.auth import get_session, require_api_key
 from stockpulse.models.annotation import ColorClassification, Note
 from stockpulse.models.indicator import StockIndicator
+from stockpulse.models.price import DailyPrice
 from stockpulse.models.stock import Stock
 
 stocks_bp = Blueprint("api_stocks", __name__)
@@ -165,6 +166,100 @@ def get_indicator_timeseries(symbol):
         "period_days": days,
         "data_points": len(series),
         "series": series,
+    })
+
+
+@stocks_bp.route("/stocks/<symbol>/prices", methods=["GET"])
+@require_api_key
+def get_prices(symbol):
+    """GET /api/stocks/{symbol}/prices?period=90d - OHLCV price history."""
+    session = get_session()
+
+    stock = (
+        session.query(Stock)
+        .filter((Stock.nse_symbol == symbol) | (Stock.symbol == symbol))
+        .first()
+    )
+    if not stock:
+        return jsonify({"error": "Stock not found"}), 404
+
+    period_str = request.args.get("period", "90d")
+    try:
+        days = int(period_str.rstrip("d"))
+    except ValueError:
+        days = 90
+
+    cutoff = date.today() - timedelta(days=days)
+
+    prices = (
+        session.query(DailyPrice)
+        .filter(DailyPrice.stock_id == stock.id, DailyPrice.date >= cutoff)
+        .order_by(DailyPrice.date)
+        .all()
+    )
+
+    return jsonify({
+        "symbol": stock.nse_symbol or stock.symbol,
+        "company_name": stock.company_name,
+        "period_days": days,
+        "data_points": len(prices),
+        "prices": [
+            {
+                "date": p.date.isoformat(),
+                "open": float(p.open) if p.open else None,
+                "high": float(p.high) if p.high else None,
+                "low": float(p.low) if p.low else None,
+                "close": float(p.close) if p.close else None,
+                "volume": int(p.volume) if p.volume else None,
+            }
+            for p in prices
+        ],
+    })
+
+
+@stocks_bp.route("/stocks/<symbol>/color", methods=["PUT"])
+@require_api_key
+def set_color(symbol):
+    """PUT /api/stocks/{symbol}/color - Set color classification."""
+    session = get_session()
+
+    stock = (
+        session.query(Stock)
+        .filter((Stock.nse_symbol == symbol) | (Stock.symbol == symbol))
+        .first()
+    )
+    if not stock:
+        return jsonify({"error": "Stock not found"}), 404
+
+    data = request.get_json()
+    if not data or not data.get("color"):
+        return jsonify({"error": "color is required"}), 400
+
+    valid_colors = {"Green", "Yellow", "Red", "White", "Blue"}
+    color = data["color"]
+    if color not in valid_colors:
+        return jsonify({"error": f"Invalid color. Must be one of: {', '.join(sorted(valid_colors))}"}), 400
+
+    # Deactivate current color
+    session.query(ColorClassification).filter(
+        ColorClassification.stock_id == stock.id,
+        ColorClassification.is_current == True,
+    ).update({"is_current": False})
+
+    cc = ColorClassification(
+        stock_id=stock.id,
+        color=color,
+        assigned_by=g.current_user.id if hasattr(g, "current_user") else None,
+        comment=data.get("comment"),
+        is_current=True,
+    )
+    session.add(cc)
+    session.commit()
+
+    return jsonify({
+        "stock_id": stock.id,
+        "symbol": stock.nse_symbol or stock.symbol,
+        "color": color,
     })
 
 
