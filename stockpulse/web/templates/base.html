@@ -18,6 +18,8 @@
             <li><a href="{{ url_for('dashboard.index') }}">Dashboard</a></li>
             <li><a href="{{ url_for('dashboard.screener_list') }}">Screeners</a></li>
             <li><a href="{{ url_for('dashboard.watchlist') }}">Watchlist</a></li>
+            <li><a href="{{ url_for('dashboard.reports_list') }}">Reports</a></li>
+            <li><a href="{{ url_for('dashboard.performance_dashboard') }}">Performance</a></li>
             {% if current_user.is_admin %}
             <li><a href="{{ url_for('admin.dashboard') }}">Admin</a></li>
             {% endif %}

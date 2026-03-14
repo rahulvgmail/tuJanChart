@@ -152,6 +152,16 @@
     </section>
 </div>
 
+{# AI Analysis (lazy-loaded from tuJanalyst) #}
+<div id="ai-analysis"
+     hx-get="{{ url_for('dashboard.stock_ai_partial', symbol=stock.nse_symbol or stock.symbol) }}"
+     hx-trigger="load"
+     hx-swap="innerHTML">
+    <p><small>Loading AI analysis...</small></p>
+</div>
+
+<hr>
+
 {% if notes %}
 <h3>Notes</h3>
 {% for n in notes %}

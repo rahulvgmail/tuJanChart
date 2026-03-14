@@ -117,6 +117,20 @@ def index():
         session.close()
 
 
+@dashboard_bp.route("/dashboard/ai-cards")
+@login_required
+def ai_dashboard_partial():
+    """HTMX partial: AI summary cards for dashboard."""
+    from stockpulse.integrations.tujanalyst_client import TuJanalystClient
+
+    client = TuJanalystClient()
+    if not client.is_configured:
+        return render_template("partials/ai_dashboard.html", ai_configured=False, stats=None)
+
+    stats = client.get_performance_summary()
+    return render_template("partials/ai_dashboard.html", ai_configured=True, stats=stats)
+
+
 @dashboard_bp.route("/dashboard/events-feed")
 @login_required
 def events_feed():
@@ -602,6 +616,88 @@ def add_note(symbol):
         session.close()
 
     return redirect(url_for("dashboard.stock_detail", symbol=symbol))
+
+
+# --- AI Analysis Partial ---
+
+
+@dashboard_bp.route("/stocks/<symbol>/ai")
+@login_required
+def stock_ai_partial(symbol):
+    """HTMX partial: AI analysis data from tuJanalyst."""
+    from stockpulse.integrations.tujanalyst_client import TuJanalystClient
+
+    client = TuJanalystClient()
+    if not client.is_configured:
+        return render_template("partials/ai_analysis.html", ai_configured=False)
+
+    investigation = client.get_latest_investigation(symbol)
+    investigations = client.get_investigations(symbol, limit=5)
+    position = client.get_position(symbol)
+
+    return render_template(
+        "partials/ai_analysis.html",
+        ai_configured=True,
+        investigation=investigation,
+        investigations=investigations,
+        position=position,
+    )
+
+
+# --- AI Reports ---
+
+
+@dashboard_bp.route("/reports")
+@login_required
+def reports_list():
+    """Browse AI-generated reports from tuJanalyst."""
+    from stockpulse.integrations.tujanalyst_client import TuJanalystClient
+
+    client = TuJanalystClient()
+    if not client.is_configured:
+        return render_template("reports/index.html", ai_configured=False, reports=[])
+
+    reports = client.get_reports(limit=50)
+    return render_template("reports/index.html", ai_configured=True, reports=reports)
+
+
+@dashboard_bp.route("/reports/<report_id>")
+@login_required
+def report_detail(report_id):
+    """View a single AI report."""
+    from stockpulse.integrations.tujanalyst_client import TuJanalystClient
+
+    client = TuJanalystClient()
+    if not client.is_configured:
+        return render_template("reports/detail.html", report=None)
+
+    report = client.get_report(report_id)
+    return render_template("reports/detail.html", report=report)
+
+
+# --- AI Performance ---
+
+
+@dashboard_bp.route("/performance")
+@login_required
+def performance_dashboard():
+    """AI recommendation performance tracking dashboard."""
+    from stockpulse.integrations.tujanalyst_client import TuJanalystClient
+
+    client = TuJanalystClient()
+    if not client.is_configured:
+        return render_template(
+            "performance/index.html", ai_configured=False, summary=None, recommendations=[],
+        )
+
+    summary = client.get_performance_summary()
+    recommendations = client.get_performance_recommendations(limit=100)
+    return render_template(
+        "performance/index.html",
+        ai_configured=True,
+        summary=summary,
+        recommendations=recommendations,
+    )
 
 
 # --- Watchlist ---

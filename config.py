@@ -23,6 +23,10 @@ class Config:
     RESULT_WINDOW_LONG = int(os.getenv("RESULT_WINDOW_LONG", "15"))
     RESULT_DECLARED_WINDOW = int(os.getenv("RESULT_DECLARED_WINDOW", "10"))
 
+    # tuJanalyst integration
+    TUJANALYST_BASE_URL = os.getenv("TUJANALYST_BASE_URL", "")
+    TUJANALYST_TIMEOUT = int(os.getenv("TUJANALYST_TIMEOUT", "5"))
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

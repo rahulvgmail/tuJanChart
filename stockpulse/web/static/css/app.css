@@ -460,3 +460,71 @@ tr.row-exit {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── AI Analysis Section ──────────────────────────────────────── */
+
+.ai-recommendation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.75rem 0;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.badge-positive {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-negative {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.badge-neutral {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.ai-confidence {
+    font-size: 0.9rem;
+    color: var(--sp-muted);
+}
+
+.ai-timeframe {
+    font-size: 0.85rem;
+    color: var(--sp-muted);
+    text-transform: capitalize;
+}
+
+.ai-date {
+    color: var(--sp-muted);
+}
+
+.ai-reasoning {
+    font-size: 0.925rem;
+    color: #374151;
+    line-height: 1.5;
+    margin: 0.5rem 0;
+}
+
+.report-body {
+    line-height: 1.6;
+}
+
+.report-body h2 {
+    font-size: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.report-body ul {
+    margin: 0.5rem 0;
+}

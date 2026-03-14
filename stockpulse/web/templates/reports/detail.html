@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ report.get('title', 'Report') if report else 'Report' }} - StockPulse{% endblock %}
+
+{% block content %}
+{% if not report %}
+<p>Report not found.</p>
+{% else %}
+<h1>{{ report.get('title', 'AI Report') }}</h1>
+<p class="stock-meta">
+    <a href="{{ url_for('dashboard.stock_detail', symbol=report.get('company_symbol', '')) }}">
+        {{ report.get('company_symbol', '') }}
+    </a>
+    | {{ report.get('created_at', '')[:10] }}
+    | {{ report.get('delivery_status', '') }}
+</p>
+
+{% if report.get('executive_summary') %}
+<article>
+    <header>Executive Summary</header>
+    <p>{{ report.get('executive_summary') }}</p>
+</article>
+{% endif %}
+
+{% if report.get('recommendation_summary') %}
+<p><strong>Recommendation:</strong> {{ report.get('recommendation_summary') }}</p>
+{% endif %}
+
+{% if report.get('report_body_markdown') %}
+<hr>
+<div class="report-body">
+    {{ report.get('report_body_markdown', '') | safe }}
+</div>
+{% endif %}
+
+<hr>
+<p><a href="{{ url_for('dashboard.reports_list') }}">&larr; All Reports</a></p>
+{% endif %}
+{% endblock %}

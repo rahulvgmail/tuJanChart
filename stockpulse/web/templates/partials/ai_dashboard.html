@@ -1,0 +1,30 @@
+{% if ai_configured and stats %}
+<h3 style="margin-top: 1.5rem;">AI Analysis</h3>
+<div class="summary-cards">
+    <article>
+        <header>Active Recommendations</header>
+        <h2>{{ stats.total_recommendations }}</h2>
+        <small>Buy: {{ stats.buy_recommendations }} | Sell: {{ stats.sell_recommendations }}</small>
+    </article>
+    <article>
+        <header>Win Rate</header>
+        <h2>{{ '%.0f'|format(stats.win_rate * 100) }}%</h2>
+        <small>{{ stats.evaluated_recommendations }} evaluated</small>
+    </article>
+    {% if stats.avg_return_buy is not none %}
+    <article>
+        <header>Avg Buy Return</header>
+        <h2 class="{{ 'text-positive' if stats.avg_return_buy > 0 else 'text-negative' }}">
+            {{ '%+.1f'|format(stats.avg_return_buy) }}%
+        </h2>
+    </article>
+    {% endif %}
+    {% if stats.best_call %}
+    <article>
+        <header>Best Call</header>
+        <h2 class="text-positive">{{ stats.best_call.company_symbol }}</h2>
+        <small>{{ '%+.1f'|format(stats.best_call.return_pct) }}% ({{ stats.best_call.recommendation }})</small>
+    </article>
+    {% endif %}
+</div>
+{% endif %}

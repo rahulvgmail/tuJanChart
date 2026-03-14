@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}AI Performance - StockPulse{% endblock %}
+
+{% block content %}
+<h1>AI Performance</h1>
+
+{% if not ai_configured %}
+<p>AI analysis not configured. Set <code>TUJANALYST_BASE_URL</code> to enable.</p>
+{% elif not summary %}
+<p>No performance data available yet.</p>
+{% else %}
+<div class="summary-cards">
+    <article>
+        <header>Total Recommendations</header>
+        <h2>{{ summary.total_recommendations }}</h2>
+        <small>Buy: {{ summary.buy_recommendations }} | Sell: {{ summary.sell_recommendations }} | Hold: {{ summary.hold_recommendations }}</small>
+    </article>
+    <article>
+        <header>Win Rate</header>
+        <h2>{{ '%.0f'|format(summary.win_rate * 100) }}%</h2>
+        <small>{{ summary.evaluated_recommendations }} evaluated</small>
+    </article>
+    {% if summary.avg_return_buy is not none %}
+    <article>
+        <header>Avg Buy Return</header>
+        <h2 class="{{ 'text-positive' if summary.avg_return_buy > 0 else 'text-negative' }}">
+            {{ '%+.1f'|format(summary.avg_return_buy) }}%
+        </h2>
+    </article>
+    {% endif %}
+    {% if summary.avg_return_sell is not none %}
+    <article>
+        <header>Avg Sell Return</header>
+        <h2>{{ '%+.1f'|format(summary.avg_return_sell) }}%</h2>
+    </article>
+    {% endif %}
+</div>
+
+{% if summary.best_call or summary.worst_call %}
+<div class="indicator-cards" style="margin-top: 1rem;">
+    {% if summary.best_call %}
+    <article>
+        <header>Best Call</header>
+        <h2 class="text-positive">
+            <a href="{{ url_for('dashboard.stock_detail', symbol=summary.best_call.company_symbol) }}">
+                {{ summary.best_call.company_symbol }}
+            </a>
+        </h2>
+        <p>{{ '%+.1f'|format(summary.best_call.return_pct) }}% ({{ summary.best_call.recommendation }})</p>
+    </article>
+    {% endif %}
+    {% if summary.worst_call %}
+    <article>
+        <header>Worst Call</header>
+        <h2 class="text-negative">
+            <a href="{{ url_for('dashboard.stock_detail', symbol=summary.worst_call.company_symbol) }}">
+                {{ summary.worst_call.company_symbol }}
+            </a>
+        </h2>
+        <p>{{ '%+.1f'|format(summary.worst_call.return_pct) }}% ({{ summary.worst_call.recommendation }})</p>
+    </article>
+    {% endif %}
+</div>
+{% endif %}
+
+<hr>
+
+<h2>Recommendation History</h2>
+{% if recommendations %}
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Company</th>
+            <th>Rec</th>
+            <th>Confidence</th>
+            <th>Price Then</th>
+            <th>Price Now</th>
+            <th>Return</th>
+            <th>Status</th>
+            <th>Outcome</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in recommendations %}
+        <tr>
+            <td>{{ r.get('recommendation_date', '')[:10] }}</td>
+            <td>
+                <a href="{{ url_for('dashboard.stock_detail', symbol=r.get('company_symbol', '')) }}">
+                    {{ r.get('company_symbol', '?') }}
+                </a>
+            </td>
+            <td>
+                {% set rec = r.get('recommendation', 'none')|upper %}
+                <span class="badge badge-{{ 'positive' if rec == 'BUY' else 'negative' if rec == 'SELL' else 'neutral' }}">
+                    {{ rec }}
+                </span>
+            </td>
+            <td>{{ '%.0f'|format(r.get('confidence', 0) * 100) }}%</td>
+            <td>{{ '%.2f'|format(r.get('price_at_recommendation', 0)) if r.get('price_at_recommendation') else '-' }}</td>
+            <td>{{ '%.2f'|format(r.get('price_now', 0)) if r.get('price_now') else '-' }}</td>
+            <td class="{{ 'text-positive' if (r.get('return_pct') or 0) > 0 else 'text-negative' if (r.get('return_pct') or 0) < 0 else '' }}">
+                {{ '%+.1f'|format(r.get('return_pct', 0)) if r.get('return_pct') is not none else '-' }}%
+            </td>
+            <td>{{ r.get('status', '?') }}</td>
+            <td>
+                {% set outcome = r.get('outcome', 'unknown') %}
+                {% if outcome == 'win' %}
+                <span class="text-positive">Win</span>
+                {% elif outcome == 'loss' %}
+                <span class="text-negative">Loss</span>
+                {% else %}
+                {{ outcome }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p>No recommendation data available yet.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

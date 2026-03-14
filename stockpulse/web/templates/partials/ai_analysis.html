@@ -1,0 +1,86 @@
+{% if not ai_configured %}
+<p><small>AI analysis not configured. Set <code>TUJANALYST_BASE_URL</code> to enable.</small></p>
+{% elif not position and not investigation %}
+<h3>AI Analysis</h3>
+<p><small>No AI analysis available for this stock yet.</small></p>
+{% else %}
+<h3>AI Analysis</h3>
+
+{% if position %}
+<div class="ai-recommendation">
+    {% set rec = position.get('new_recommendation', 'none')|upper %}
+    {% set conf = position.get('confidence', 0) %}
+    {% set tf = position.get('timeframe', '') %}
+    <span class="badge badge-{{ 'positive' if rec == 'BUY' else 'negative' if rec == 'SELL' else 'neutral' }}">
+        {{ rec }}
+    </span>
+    <span class="ai-confidence">{{ '%.0f'|format(conf * 100) }}% confidence</span>
+    {% if tf %}<span class="ai-timeframe">{{ tf|replace('_', ' ') }}</span>{% endif %}
+    {% if position.get('created_at') %}
+    <small class="ai-date">{{ position.get('created_at', '')[:10] }}</small>
+    {% endif %}
+</div>
+{% if position.get('reasoning') %}
+<p class="ai-reasoning">{{ position.get('reasoning', '') }}</p>
+{% endif %}
+{% endif %}
+
+{% if investigation %}
+<details open>
+    <summary>Latest Investigation ({{ investigation.get('created_at', '')[:10] }})</summary>
+    <p>{{ investigation.get('synthesis', 'No synthesis available.') }}</p>
+
+    {% set findings = investigation.get('key_findings', []) %}
+    {% if findings %}
+    <strong>Key Findings:</strong>
+    <ul>
+        {% for f in findings[:5] %}
+        <li>{{ f }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% set red_flags = investigation.get('red_flags', []) %}
+    {% if red_flags %}
+    <strong>Red Flags:</strong>
+    <ul>
+        {% for r in red_flags %}
+        <li class="text-negative">{{ r }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% set positive = investigation.get('positive_signals', []) %}
+    {% if positive %}
+    <strong>Positive Signals:</strong>
+    <ul>
+        {% for p in positive %}
+        <li class="text-positive">{{ p }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <small>Significance: {{ investigation.get('significance', 'unknown') }} | Model: {{ investigation.get('llm_model_used', 'N/A') }}</small>
+</details>
+{% endif %}
+
+{% if investigations and investigations|length > 1 %}
+<details>
+    <summary>Investigation History ({{ investigations|length }})</summary>
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Date</th><th>Significance</th><th>Summary</th></tr></thead>
+        <tbody>
+            {% for inv in investigations[1:] %}
+            <tr>
+                <td>{{ inv.get('created_at', '')[:10] }}</td>
+                <td>{{ inv.get('significance', '?') }}</td>
+                <td>{{ inv.get('synthesis', '')[:100] }}{% if inv.get('synthesis', '')|length > 100 %}...{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</details>
+{% endif %}
+{% endif %}
