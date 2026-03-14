@@ -19,3 +19,9 @@ wheels/
 .idea/
 .vscode/
 *.swp
+
+# Celery Beat schedule
+celerybeat-schedule*
+
+# Logs
+*.log
