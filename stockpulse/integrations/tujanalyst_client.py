@@ -20,17 +20,17 @@ class TuJanalystClient:
     def __init__(self, base_url: str | None = None, timeout: int | None = None):
         self.base_url = (base_url or TUJANALYST_BASE_URL).rstrip("/")
         self.timeout = timeout or TUJANALYST_TIMEOUT
-        self._client = httpx.Client(headers={"Accept": "application/json"}, timeout=self.timeout)
+        self._client = httpx.Client(headers={"Accept": "application/json"}, timeout=self.timeout, follow_redirects=True)
 
     @property
     def is_configured(self) -> bool:
         return bool(self.base_url)
 
     def get_investigations(self, symbol: str, limit: int = 5) -> list[dict[str, Any]]:
-        """GET /api/v1/investigations?company_symbol={symbol}&limit={limit}"""
+        """GET /api/v1/investigations/company/{symbol}"""
         if not self.is_configured:
             return []
-        data = self._request("GET", "/api/v1/investigations", params={"company_symbol": symbol, "limit": limit})
+        data = self._request("GET", f"/api/v1/investigations/company/{symbol}", params={"limit": limit})
         if isinstance(data, dict):
             return data.get("items", [])
         if isinstance(data, list):
@@ -55,7 +55,7 @@ class TuJanalystClient:
         params: dict[str, Any] = {"limit": limit}
         if symbol:
             params["company_symbol"] = symbol
-        data = self._request("GET", "/api/v1/reports", params=params)
+        data = self._request("GET", "/api/v1/reports/", params=params)
         if isinstance(data, dict):
             return data.get("items", [])
         if isinstance(data, list):
