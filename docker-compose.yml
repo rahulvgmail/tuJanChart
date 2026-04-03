@@ -36,6 +36,9 @@ services:
       SECRET_KEY: dev-secret-key-change-in-production
       DATABASE_URL: postgresql://stockpulse:stockpulse@db:5432/stockpulse
       REDIS_URL: redis://redis:6379/0
+      DB_POOL_SIZE: "10"
+      DB_MAX_OVERFLOW: "20"
+      TUJANALYST_BASE_URL: http://host.docker.internal:8000
     ports:
       - "5001:5000"
     volumes:
@@ -52,6 +55,8 @@ services:
     environment:
       DATABASE_URL: postgresql://stockpulse:stockpulse@db:5432/stockpulse
       REDIS_URL: redis://redis:6379/0
+      DB_POOL_SIZE: "5"
+      DB_MAX_OVERFLOW: "10"
     volumes:
       - .:/app
     depends_on:

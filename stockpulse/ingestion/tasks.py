@@ -301,6 +301,31 @@ def backfill_stock(self, stock_id: int, days: int = 365):
         session.close()
 
 
+@celery_app.task(name="ingestion.backfill_batch", bind=True, max_retries=1)
+def backfill_batch(self, stock_ids: list[int], days: int = 365):
+    """Backfill historical prices for a batch of stocks sequentially.
+
+    Designed to be dispatched in parallel across multiple Celery workers,
+    with each worker processing its own chunk of stock IDs.
+    """
+    logger.info("Starting batch backfill for %d stocks (%d days)", len(stock_ids), days)
+    results = {"ok": 0, "failed": 0, "no_data": 0}
+
+    for sid in stock_ids:
+        try:
+            result = backfill_stock(sid, days)
+            if result.get("status") == "ok":
+                results["ok"] += 1
+            else:
+                results["no_data"] += 1
+        except Exception:
+            logger.warning("Backfill failed for stock %d, continuing", sid)
+            results["failed"] += 1
+
+    logger.info("Batch backfill complete: %s", results)
+    return results
+
+
 @celery_app.task(name="ingestion.pull_corporate_actions", bind=True)
 def pull_corporate_actions(self):
     """Pull board meeting and result date data from BSE.

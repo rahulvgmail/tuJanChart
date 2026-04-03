@@ -11,8 +11,11 @@ from stockpulse.ingestion.adapters.base import DataAdapter
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 50
-BATCH_DELAY = 1.0  # seconds between batches to avoid rate limits
+DEFAULT_BATCH_SIZE = 50
+DEFAULT_BATCH_DELAY = 1.0  # seconds between batches to avoid rate limits
+
+BACKFILL_BATCH_SIZE = 100
+BACKFILL_BATCH_DELAY = 0.5
 
 
 def _to_yf_symbol(symbol: str) -> str:
@@ -31,6 +34,15 @@ def _batched(items: list, size: int):
 class YFinanceAdapter(DataAdapter):
     """Data adapter using yfinance (free, unofficial Yahoo Finance API)."""
 
+    def __init__(self, batch_size: int = DEFAULT_BATCH_SIZE, batch_delay: float = DEFAULT_BATCH_DELAY):
+        self.batch_size = batch_size
+        self.batch_delay = batch_delay
+
+    @classmethod
+    def for_backfill(cls) -> "YFinanceAdapter":
+        """Create an adapter tuned for bulk backfill (larger batches, shorter delay)."""
+        return cls(batch_size=BACKFILL_BATCH_SIZE, batch_delay=BACKFILL_BATCH_DELAY)
+
     def fetch_daily_ohlcv(
         self, symbols: list[str], start: date, end: date
     ) -> dict[str, pd.DataFrame]:
@@ -39,7 +51,7 @@ class YFinanceAdapter(DataAdapter):
         end_str = (end + timedelta(days=1)).isoformat()
         start_str = start.isoformat()
 
-        for batch_num, batch in enumerate(_batched(symbols, BATCH_SIZE)):
+        for batch_num, batch in enumerate(_batched(symbols, self.batch_size)):
             yf_symbols = [_to_yf_symbol(s) for s in batch]
             ticker_str = " ".join(yf_symbols)
 
@@ -107,8 +119,8 @@ class YFinanceAdapter(DataAdapter):
             except Exception:
                 logger.exception("Error fetching batch %d", batch_num + 1)
 
-            if batch_num < (len(symbols) // BATCH_SIZE):
-                time.sleep(BATCH_DELAY)
+            if batch_num < (len(symbols) // self.batch_size):
+                time.sleep(self.batch_delay)
 
         logger.info("Fetched OHLCV for %d/%d symbols", len(results), len(symbols))
         return results
@@ -116,7 +128,7 @@ class YFinanceAdapter(DataAdapter):
     def fetch_quotes(self, symbols: list[str]) -> dict[str, dict]:
         results = {}
 
-        for batch_num, batch in enumerate(_batched(symbols, BATCH_SIZE)):
+        for batch_num, batch in enumerate(_batched(symbols, self.batch_size)):
             for sym in batch:
                 try:
                     ticker = yf.Ticker(_to_yf_symbol(sym))
@@ -134,8 +146,8 @@ class YFinanceAdapter(DataAdapter):
                 except Exception:
                     logger.warning("Failed to fetch quote for %s", sym)
 
-            if batch_num < (len(symbols) // BATCH_SIZE):
-                time.sleep(BATCH_DELAY)
+            if batch_num < (len(symbols) // self.batch_size):
+                time.sleep(self.batch_delay)
 
         logger.info("Fetched quotes for %d/%d symbols", len(results), len(symbols))
         return results

@@ -80,6 +80,29 @@ def import_corporate_data_cmd():
     click.echo(f"Circuit bands: {cb}")
 
 
+@app.cli.command("import-expanded-universe")
+@click.option("--dry-run", is_flag=True, help="Show counts without inserting")
+@click.option("--backfill", is_flag=True, help="Trigger backfill for newly added stocks")
+def import_expanded_universe_cmd(dry_run, backfill):
+    """Expand universe by downloading NSE/BSE equity lists."""
+    from seed.import_nse_bse_universe import import_expanded_universe
+
+    result = import_expanded_universe(dry_run=dry_run)
+    click.echo(f"Universe expansion: {result}")
+
+    if backfill and not dry_run and result.get("new_stock_ids"):
+        from stockpulse.ingestion.tasks import backfill_batch
+
+        stock_ids = result["new_stock_ids"]
+        chunk_size = 500
+        for i in range(0, len(stock_ids), chunk_size):
+            chunk = stock_ids[i : i + chunk_size]
+            backfill_batch.delay(chunk)
+            click.echo(f"Queued backfill for {len(chunk)} stocks (batch {i // chunk_size + 1})")
+    elif backfill and not dry_run:
+        click.echo("No new stocks to backfill.")
+
+
 @app.cli.command("run-migration")
 @click.option("--skip-backfill", is_flag=True, help="Skip yfinance price backfill")
 @click.option("--force", is_flag=True, help="Force re-import")

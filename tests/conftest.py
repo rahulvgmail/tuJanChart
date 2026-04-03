@@ -3,6 +3,7 @@
 import os
 from datetime import date, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import create_engine
@@ -12,6 +13,7 @@ os.environ["DATABASE_URL"] = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql://stockpulse:stockpulse@localhost:5432/stockpulse_test",
 )
+os.environ["REDIS_URL"] = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 from stockpulse.models.base import Base
 
@@ -24,6 +26,138 @@ def db_engine():
     yield engine
     Base.metadata.drop_all(engine)
     engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def app(db_engine):
+    """Create the Flask app once for the whole test session."""
+    from stockpulse.app import create_app
+
+    with patch("stockpulse.app.init_redis"):
+        application = create_app("testing")
+    application.config["TESTING"] = True
+    return application
+
+
+@pytest.fixture()
+def client(app, db_session):
+    """Flask test client with monkeypatched DB session for rollback isolation."""
+    with patch("stockpulse.extensions.get_db", return_value=db_session):
+        with patch("stockpulse.api.auth.get_db", return_value=db_session):
+            with app.test_client() as c:
+                yield c
+
+
+@pytest.fixture()
+def auth_header(db_session):
+    """Create a test user + API key and return the auth header dict."""
+    from stockpulse.models.user import APIKey, User
+
+    user = User(
+        email="test@stockpulse.local",
+        password_hash="unused",
+        name="Test User",
+        role="admin",
+        is_active=True,
+    )
+    user.set_password("testpass123")
+    db_session.add(user)
+    db_session.flush()
+
+    raw_key = "test-api-key-raw-secret"
+    api_key = APIKey(
+        user_id=user.id,
+        key_hash=APIKey.hash_key(raw_key),
+        label="test-key",
+        is_active=True,
+    )
+    db_session.add(api_key)
+    db_session.flush()
+
+    return {"Authorization": f"Bearer {raw_key}"}
+
+
+@pytest.fixture()
+def sample_screener(db_session):
+    """A screener with one condition for testing."""
+    from stockpulse.models.screener import Screener, ScreenerCondition
+
+    screener = Screener(
+        name="52W Closing High",
+        slug="test-52w-closing-high",
+        category="Momentum",
+        is_builtin=False,
+        is_active=True,
+    )
+    db_session.add(screener)
+    db_session.flush()
+
+    condition = ScreenerCondition(
+        screener_id=screener.id,
+        field="is_52w_closing_high",
+        operator="is_true",
+        ordinal=0,
+    )
+    db_session.add(condition)
+    db_session.flush()
+    return screener
+
+
+@pytest.fixture()
+def builtin_screener(db_session):
+    """A built-in screener that cannot be deleted."""
+    from stockpulse.models.screener import Screener, ScreenerCondition
+
+    screener = Screener(
+        name="Volume Breakout",
+        slug="test-builtin-volume-bo",
+        category="Volume",
+        is_builtin=True,
+        is_active=True,
+    )
+    db_session.add(screener)
+    db_session.flush()
+
+    condition = ScreenerCondition(
+        screener_id=screener.id,
+        field="is_volume_breakout",
+        operator="is_true",
+        ordinal=0,
+    )
+    db_session.add(condition)
+    db_session.flush()
+    return screener
+
+
+@pytest.fixture()
+def sample_event(db_session, sample_stock):
+    """An event linked to sample_stock."""
+    from stockpulse.models.event import Event
+
+    event = Event(
+        stock_id=sample_stock.id,
+        event_type="52W_CLOSING_HIGH",
+        payload={"price": 1250.0, "prev_high": 1200.0},
+    )
+    db_session.add(event)
+    db_session.flush()
+    return event
+
+
+@pytest.fixture()
+def sample_webhook(db_session):
+    """An active webhook for testing."""
+    from stockpulse.models.event import Webhook
+
+    webhook = Webhook(
+        url="https://example.com/webhook",
+        secret="test-secret",
+        event_types=["52W_CLOSING_HIGH", "VOLUME_BREAKOUT"],
+        is_active=True,
+    )
+    db_session.add(webhook)
+    db_session.flush()
+    return webhook
 
 
 @pytest.fixture()

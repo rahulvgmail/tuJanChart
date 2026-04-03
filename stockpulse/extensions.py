@@ -36,7 +36,9 @@ redis_client: Redis | None = None
 
 def init_db(database_url: str) -> None:
     global db_engine, DbSession
-    db_engine = create_engine(database_url, pool_size=20, max_overflow=40, pool_pre_ping=True)
+    pool = int(os.getenv("DB_POOL_SIZE", "10"))
+    overflow = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+    db_engine = create_engine(database_url, pool_size=pool, max_overflow=overflow, pool_pre_ping=True)
     DbSession = sessionmaker(bind=db_engine)
 
 
